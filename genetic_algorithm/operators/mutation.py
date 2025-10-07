@@ -4,13 +4,22 @@ Mutation Operator for Multiple Sequence Alignment Genetic Algorithm.
 Based on the research paper that describes the OP-mutation technique (optimal probability),
 where two positions are randomly selected per chromosome and substituted one for the other.
 
+Additionally implements SAGA mutation operators:
+- Gap Insertion with phylogenetic groups
+- Block Shuffling (16 variants)
+- Block Searching
+- Local Optimal Rearrangement
+
 Optimal mutation probability: 0.5
 """
 
 import random
-import copy
 from typing import List
 from genetic_algorithm.alignment import Alignment
+from genetic_algorithm.utils.phylogenetic_tree import PhylogeneticTreeHelper
+from genetic_algorithm.operators.saga_operators import (
+    SAGABlockOperators, SAGABlockSearching, SAGALocalRearrangement
+)
 
 
 class MutationOperator:
@@ -27,6 +36,11 @@ class MutationOperator:
         self.dna_chars = ['A', 'T', 'G', 'C', '-']
         self.protein_chars = ['A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 
                              'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V', '-']
+        
+        # Initialize SAGA operators
+        self.saga_block_ops = SAGABlockOperators(mutation_probability)
+        self.saga_block_search = SAGABlockSearching(mutation_probability)
+        self.saga_local_rearrange = SAGALocalRearrangement(mutation_probability)
     
     def mutate(self, individual: Alignment, sequence_type: str = "protein") -> Alignment:
         """
@@ -262,3 +276,214 @@ class MutationOperator:
         if not 0.0 <= probability <= 1.0:
             raise ValueError("Probability must be between 0.0 and 1.0")
         self.mutation_probability = probability
+    
+    # ========== SAGA OPERATORS ==========
+    
+    def saga_gap_insertion(self, individual: Alignment, objective_function=None,
+                          mode: str = 'stochastic', max_gap_length: int = 5) -> Alignment:
+        """
+        SAGA Gap Insertion Operator.
+        
+        Divides sequences into two groups (G1 and G2) based on phylogenetic tree,
+        then inserts gaps of random length at different positions.
+        
+        Args:
+            individual: Individual to be mutated
+            objective_function: Objective function for hill-climbing mode
+            mode: 'stochastic' or 'hill_climbing'
+            max_gap_length: Maximum length of gap to insert
+            
+        Returns:
+            Mutated individual
+        """
+        # Check if mutation should occur
+        if random.random() > self.mutation_probability:
+            return individual.copy_alignment()
+        
+        mutated_individual = individual.copy_alignment()
+        
+        # Build phylogenetic tree and split sequences into two groups
+        tree_helper = PhylogeneticTreeHelper()
+        G1_indices, G2_indices = tree_helper.split_sequences_by_tree(
+            mutated_individual.aligned_segments, 
+            split_method='subtree'
+        )
+        
+        # Generate random gap length
+        gap_length = random.randint(1, max_gap_length)
+        gap_string = '-' * gap_length
+        
+        # Select position P1 for G1
+        if mode == 'hill_climbing' and objective_function is not None:
+            P1 = self._find_best_gap_position(mutated_individual, G1_indices, 
+                                             gap_length, objective_function)
+        else:
+            P1 = random.randint(0, mutated_individual.alignment_length)
+        
+        # Insert gaps in G1 at position P1
+        for idx in G1_indices:
+            segment = mutated_individual.aligned_segments[idx]
+            segment.sequence = segment.sequence[:P1] + gap_string + segment.sequence[P1:]
+        
+        # Select position P2 for G2 (at maximum distance from P1)
+        # Maximum distance means near the opposite end of the alignment
+        alignment_half = mutated_individual.alignment_length // 2
+        if P1 < alignment_half:
+            # P1 is in first half, put P2 in second half
+            min_pos = alignment_half
+            max_pos = mutated_individual.alignment_length + gap_length
+        else:
+            # P1 is in second half, put P2 in first half
+            min_pos = 0
+            max_pos = alignment_half
+        
+        if mode == 'hill_climbing' and objective_function is not None:
+            P2 = self._find_best_gap_position_in_range(
+                mutated_individual, G2_indices, gap_length, 
+                objective_function, min_pos, max_pos
+            )
+        else:
+            P2 = random.randint(min_pos, max_pos)
+        
+        # Insert gaps in G2 at position P2
+        for idx in G2_indices:
+            segment = mutated_individual.aligned_segments[idx]
+            segment.sequence = segment.sequence[:P2] + gap_string + segment.sequence[P2:]
+        
+        # Update alignment length
+        mutated_individual.alignment_length += gap_length * 2
+        
+        return mutated_individual
+    
+    def _find_best_gap_position(self, individual: Alignment, group_indices: List[int],
+                                gap_length: int, objective_function) -> int:
+        """
+        Find the best position to insert gaps using hill-climbing.
+        
+        Args:
+            individual: Current alignment
+            group_indices: Indices of sequences in the group
+            gap_length: Length of gap to insert
+            objective_function: Objective function to evaluate fitness
+            
+        Returns:
+            Best position to insert gap
+        """
+        best_position = 0
+        best_score = float('-inf')
+        gap_string = '-' * gap_length
+        
+        # Try a sample of positions (not all, for efficiency)
+        sample_size = min(20, individual.alignment_length + 1)
+        positions_to_test = random.sample(
+            range(individual.alignment_length + 1), 
+            sample_size
+        )
+        
+        for pos in positions_to_test:
+            # Create temporary alignment with gap inserted
+            temp_individual = individual.copy_alignment()
+            for idx in group_indices:
+                segment = temp_individual.aligned_segments[idx]
+                segment.sequence = segment.sequence[:pos] + gap_string + segment.sequence[pos:]
+            
+            # Update alignment length
+            temp_individual.alignment_length = len(temp_individual.aligned_segments[0].sequence)
+            
+            # Evaluate fitness
+            temp_individual.calculate_fitness(objective_function)
+            score = temp_individual.fitness_score
+            
+            if score > best_score:
+                best_score = score
+                best_position = pos
+        
+        return best_position
+    
+    def _find_best_gap_position_in_range(self, individual: Alignment, group_indices: List[int],
+                                         gap_length: int, objective_function,
+                                         min_pos: int, max_pos: int) -> int:
+        """
+        Find the best position to insert gaps within a range using hill-climbing.
+        
+        Args:
+            individual: Current alignment
+            group_indices: Indices of sequences in the group
+            gap_length: Length of gap to insert
+            objective_function: Objective function to evaluate fitness
+            min_pos: Minimum position (inclusive)
+            max_pos: Maximum position (exclusive)
+            
+        Returns:
+            Best position to insert gap within range
+        """
+        if min_pos >= max_pos:
+            return min_pos
+        
+        best_position = min_pos
+        best_score = float('-inf')
+        gap_string = '-' * gap_length
+        
+        # Try a sample of positions in the range
+        range_size = max_pos - min_pos
+        sample_size = min(10, range_size)
+        
+        if range_size > 0:
+            positions_to_test = random.sample(range(min_pos, max_pos), sample_size)
+        else:
+            positions_to_test = [min_pos]
+        
+        for pos in positions_to_test:
+            # Create temporary alignment with gap inserted
+            temp_individual = individual.copy_alignment()
+            for idx in group_indices:
+                segment = temp_individual.aligned_segments[idx]
+                segment.sequence = segment.sequence[:pos] + gap_string + segment.sequence[pos:]
+            
+            # Update alignment length
+            temp_individual.alignment_length = len(temp_individual.aligned_segments[0].sequence)
+            
+            # Evaluate fitness
+            temp_individual.calculate_fitness(objective_function)
+            score = temp_individual.fitness_score
+            
+            if score > best_score:
+                best_score = score
+                best_position = pos
+        
+        return best_position
+    # ========== SAGA BLOCK OPERATORS (delegated to saga_operators.py) ==========
+    
+    def saga_block_shuffling(self, individual: Alignment, objective_function=None,
+                            block_type: str = 'random', movement_type: str = 'random',
+                            mode: str = 'stochastic') -> Alignment:
+        """
+        SAGA Block Shuffling Operator (16 variants).
+        
+        Delegates to SAGABlockOperators. See saga_operators.py for details.
+        """
+        return self.saga_block_ops.block_shuffling(
+            individual, objective_function, block_type, movement_type, mode
+        )
+    
+    def saga_block_searching(self, individual: Alignment, min_block_size: int = 3,
+                            max_block_size: int = 10) -> Alignment:
+        """
+        SAGA Block Searching Operator.
+        
+        Delegates to SAGABlockSearching. See saga_operators.py for details.
+        """
+        return self.saga_block_search.block_searching(
+            individual, min_block_size, max_block_size
+        )
+    
+    def saga_local_rearrangement(self, individual: Alignment, objective_function,
+                                block_size: int = 10, exhaustive_threshold: int = 1000) -> Alignment:
+        """
+        SAGA Local Optimal Rearrangement Operator.
+        
+        Delegates to SAGALocalRearrangement. See saga_operators.py for details.
+        """
+        return self.saga_local_rearrange.local_rearrangement(
+            individual, objective_function, block_size, exhaustive_threshold
+        )

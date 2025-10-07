@@ -283,5 +283,88 @@ def main():
         traceback.print_exc()
 
 
+def test_saga_operators():
+    """Test SAGA-specific operators."""
+    print("\n" + "=" * 50)
+    print("SAGA OPERATORS TEST")
+    print("=" * 50)
+    
+    sequences = create_test_sequences()
+    objective_func = ObjectiveFuncion(sequences)
+    mutation_op = MutationOperator(mutation_probability=0.5)
+    
+    # Test Gap Insertion
+    print("\n1. Testing SAGA Gap Insertion Operator:")
+    individual = Alignment(sequences)
+    print(f"   Original alignment length: {individual.alignment_length}")
+    print(f"   Original first sequence: {individual.aligned_segments[0].sequence[:50]}...")
+    
+    mutated = mutation_op.saga_gap_insertion(individual, objective_func, mode='stochastic')
+    print(f"   After gap insertion length: {mutated.alignment_length}")
+    print(f"   Mutated first sequence: {mutated.aligned_segments[0].sequence[:50]}...")
+    
+    # Test Block Shuffling
+    print("\n2. Testing SAGA Block Shuffling Operator:")
+    print("   Testing different variants:")
+    
+    variants = [
+        ('gap', 'complete', 'stochastic'),
+        ('residue', 'horizontal', 'stochastic'),
+        ('gap', 'vertical', 'stochastic'),
+        ('random', 'random', 'stochastic'),
+    ]
+    
+    for block_type, movement_type, mode in variants:
+        try:
+            mutated = mutation_op.saga_block_shuffling(
+                individual, objective_func, block_type, movement_type, mode
+            )
+            print(f"   - Block: {block_type:8s}, Movement: {movement_type:10s}, Mode: {mode:12s} ✓")
+        except Exception as e:
+            print(f"   - Block: {block_type:8s}, Movement: {movement_type:10s}, Mode: {mode:12s} ✗ ({e})")
+    
+    # Test Block Searching
+    print("\n3. Testing SAGA Block Searching Operator:")
+    try:
+        mutated = mutation_op.saga_block_searching(individual, min_block_size=3, max_block_size=6)
+        print(f"   Block searching executed successfully")
+        print(f"   Result alignment length: {mutated.alignment_length}")
+    except Exception as e:
+        print(f"   Block searching failed: {e}")
+    
+    # Test Local Rearrangement
+    print("\n4. Testing SAGA Local Rearrangement Operator:")
+    try:
+        mutated = mutation_op.saga_local_rearrangement(
+            individual, objective_func, block_size=8, exhaustive_threshold=1000
+        )
+        print(f"   Local rearrangement executed successfully")
+        print(f"   Result alignment length: {mutated.alignment_length}")
+    except Exception as e:
+        print(f"   Local rearrangement failed: {e}")
+    
+    print("\n✅ SAGA operators testing completed!")
+
+
+
+def main_with_saga():
+    """Main function including SAGA operators tests."""
+    try:
+        test_crossover_operator()
+        test_mutation_operator()
+        test_selection_operator()
+        test_complete_generation()
+        test_saga_operators()  # New SAGA tests
+        
+        print("\n" + "=" * 50)
+        print("ALL TESTS COMPLETED SUCCESSFULLY")
+        print("=" * 50)
+    except Exception as e:
+        print(f"\nERROR during tests: {e}")
+        import traceback
+        traceback.print_exc()
+
+
 if __name__ == "__main__":
-    main()
+    # Run with SAGA tests
+    main_with_saga()

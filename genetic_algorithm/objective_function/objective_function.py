@@ -1,4 +1,5 @@
 from Bio.Phylo.TreeConstruction import DistanceCalculator, DistanceTreeConstructor
+from Bio.Align import MultipleSeqAlignment
 from typing import List
 from Bio.SeqRecord import SeqRecord # Usado para tipagem e inicialização
 from genetic_algorithm.objective_function.pam250 import PAM_250
@@ -23,14 +24,28 @@ class ObjectiveFuncion:
         Calculates sequence weights (Clustal W-like) using Neighbor-Joining on pairwise sequence identity.
         """
         
+        # Pad sequences to same length for MSA
+        max_len = max(len(seq.seq) for seq in initial_sequences)
+        padded_sequences = []
+        for seq in initial_sequences:
+            padded_seq = SeqRecord(
+                seq.seq + '-' * (max_len - len(seq.seq)),
+                id=seq.id,
+                name=seq.name,
+                description=seq.description
+            )
+            padded_sequences.append(padded_seq)
+        
+        # Convert to MultipleSeqAlignment
+        msa = MultipleSeqAlignment(padded_sequences)
+        
         # 1. Calculate Pairwise Distances based on literal identity (1 - % identity)
         calculator = DistanceCalculator('identity') 
-        # Biopython handles SeqRecord objects here
-        distance_matrix = calculator.get_distance(initial_sequences) 
+        calculator.get_distance(msa)
 
         # 2. Construct the Guide Tree using Neighbor-Joining
-        constructor = DistanceTreeConstructor(calculator, 'neighbor-joining')
-        guide_tree = constructor.build_tree(initial_sequences)
+        constructor = DistanceTreeConstructor(calculator, 'nj')
+        guide_tree = constructor.build_tree(msa)
 
         weights: dict[str, float] = {}
         
