@@ -4,7 +4,7 @@ from typing import List
 from Bio.SeqRecord import SeqRecord # Usado para tipagem e inicialização
 from genetic_algorithm.objective_function.pam250 import PAM_250
 
-class ObjectiveFunction:
+class SAGAObjectiveFunction:
     def __init__(self, initial_sequences: List[SeqRecord]):
         self.cost_matrix = PAM_250
         

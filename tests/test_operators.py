@@ -18,7 +18,7 @@ from Bio.Seq import Seq
 
 from genetic_algorithm.alignment import Alignment
 from genetic_algorithm.operators import CrossoverOperator, MutationOperator, SelectionOperator
-from genetic_algorithm.objective_function.objective_function import ObjectiveFunction
+from genetic_algorithm.objective_function.saga_objective_function import SAGAObjectiveFunction
 
 
 def create_test_sequences():
@@ -290,7 +290,7 @@ def test_saga_operators():
     print("=" * 50)
     
     sequences = create_test_sequences()
-    objective_func = ObjectiveFunction(sequences)
+    objective_func = SAGAObjectiveFunction(sequences)
     mutation_op = MutationOperator(mutation_probability=0.5)
     
     # Test Gap Insertion

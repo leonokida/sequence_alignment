@@ -1,7 +1,7 @@
 import pytest
 from Bio.SeqRecord import SeqRecord
 from Bio.Seq import Seq
-from genetic_algorithm.objective_function.objective_function import ObjectiveFunction
+from genetic_algorithm.objective_function.saga_objective_function import SAGAObjectiveFunction
 
 
 def test_objective_function_basic():
@@ -12,7 +12,7 @@ def test_objective_function_basic():
         SeqRecord(Seq("ACDG"), id="seq3"),
     ]
 
-    obj_func = ObjectiveFunction(seqs)
+    obj_func = SAGAObjectiveFunction(seqs)
 
     total_weight = sum(obj_func.weights.values())
     assert pytest.approx(total_weight, 0.001) == 1.0
@@ -34,7 +34,7 @@ def test_pair_score_affine_with_gaps():
         SeqRecord(Seq("ACD"), id="seq1"),
         SeqRecord(Seq("ACD"), id="seq2")
     ]
-    obj_func = ObjectiveFunction(seqs)
+    obj_func = SAGAObjectiveFunction(seqs)
 
     score_match = obj_func._calculate_pair_score_affine("ACD", "ACD")
     score_gap = obj_func._calculate_pair_score_affine("ACD-", "ACDE")
@@ -54,8 +54,8 @@ def test_weight_normalization_diff_sequences():
         SeqRecord(Seq("WWWW"), id="s2"),
     ]
 
-    obj_sim = ObjectiveFunction(seqs_similares)
-    obj_diff = ObjectiveFunction(seqs_diferentes)
+    obj_sim = SAGAObjectiveFunction(seqs_similares)
+    obj_diff = SAGAObjectiveFunction(seqs_diferentes)
 
     # Pesos normalizados devem somar 1
     assert pytest.approx(sum(obj_sim.weights.values()), 0.001) == 1.0

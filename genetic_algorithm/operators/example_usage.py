@@ -11,7 +11,7 @@ from Bio.Seq import Seq
 
 from genetic_algorithm.alignment import Alignment
 from genetic_algorithm.operators import CrossoverOperator, MutationOperator, SelectionOperator
-from genetic_algorithm.objective_function.objective_function import ObjectiveFuncion
+from genetic_algorithm.objective_function.saga_objective_function import SAGAObjectiveFunction
 
 
 def create_sample_sequences():
@@ -116,7 +116,7 @@ def demonstrate_selection():
     # Create population and objective function
     sequences = create_sample_sequences()
     population = create_initial_population(sequences, population_size=5)
-    objective_function = ObjectiveFuncion(sequences)
+    objective_function = SAGAObjectiveFunction(sequences)
     
     # Evaluate the population
     evaluate_population(population, objective_function)
@@ -160,7 +160,7 @@ def demonstrate_complete_generation():
     
     # Create initial population
     population = create_initial_population(sequences, population_size)
-    objective_function = ObjectiveFuncion(sequences)
+    objective_function = SAGAObjectiveFunction(sequences)
     
     # Evaluate initial population
     evaluate_population(population, objective_function)
