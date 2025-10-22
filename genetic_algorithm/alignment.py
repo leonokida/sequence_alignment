@@ -66,17 +66,11 @@ class Alignment:
             
         return aligned_segments, L
     
-    def calculate_fitness(self, objective_function) -> None:
+    def update_fitness(self, fitness: float) -> None:
         """
-        Computes the fitness score based on the objective function.
-        """
-        sequences, sequence_ids = self.get_sequences_and_ids()
-        
-        self.fitness_score = objective_function.compute_fitness(
-            aligned_sequences=sequences, 
-            sequence_ids=sequence_ids, 
-            alignment_length=self.alignment_length
-        )
+        Updates the fitness score based on the objective function.
+        """        
+        self.fitness_score = fitness
     
     def copy_alignment(self) -> 'Alignment':
         """
