@@ -72,6 +72,37 @@ class Alignment:
         """        
         self.fitness_score = fitness
     
+    def calculate_fitness(self, objective_function) -> None:
+        """
+        Calculate and update the fitness score using the provided objective function.
+        
+        Args:
+            objective_function: An instance of BaseObjectiveFunction
+        """
+        sequences, ids = self.get_sequences_and_ids()
+        fitness = objective_function.compute_fitness(
+            aligned_sequences=sequences,
+            sequence_ids=ids,
+            alignment_length=self.alignment_length
+        )
+        self.update_fitness(fitness)
+    
+    def normalize_alignment_length(self) -> None:
+        """
+        Normalize all sequences to the same length by padding with gaps.
+        Updates alignment_length to reflect the maximum length.
+        """
+        # Find maximum length
+        max_length = max(len(seg.sequence) for seg in self.aligned_segments)
+        
+        # Pad all sequences to max length
+        for segment in self.aligned_segments:
+            if len(segment.sequence) < max_length:
+                segment.sequence = segment.sequence + '-' * (max_length - len(segment.sequence))
+        
+        # Update alignment length
+        self.alignment_length = max_length
+    
     def copy_alignment(self) -> 'Alignment':
         """
         Deep copy of the alignment

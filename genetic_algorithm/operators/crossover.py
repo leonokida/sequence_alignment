@@ -146,10 +146,15 @@ class CrossoverOperator:
             seq1 = list(parent1.aligned_segments[i].sequence)
             seq2 = list(parent2.aligned_segments[i].sequence)
             
+            # Normalize lengths (pad shorter sequence with gaps)
+            max_len = max(len(seq1), len(seq2))
+            seq1.extend(['-'] * (max_len - len(seq1)))
+            seq2.extend(['-'] * (max_len - len(seq2)))
+            
             new_seq1 = []
             new_seq2 = []
             
-            for j in range(len(seq1)):
+            for j in range(max_len):
                 if random.random() < 0.5:
                     # Keep original characters
                     new_seq1.append(seq1[j])

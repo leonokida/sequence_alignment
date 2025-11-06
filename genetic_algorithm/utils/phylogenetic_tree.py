@@ -26,9 +26,18 @@ class PhylogeneticTreeHelper:
         """
         # Convert aligned segments to SeqRecord objects for tree construction
         seq_records = []
+        
+        # Find maximum length
+        max_length = max(len(segment.sequence) for segment in aligned_segments)
+        
         for segment in aligned_segments:
+            # Pad sequence to max length if needed
+            seq_str = segment.sequence
+            if len(seq_str) < max_length:
+                seq_str = seq_str + '-' * (max_length - len(seq_str))
+            
             seq_record = SeqRecord(
-                Seq(segment.sequence),
+                Seq(seq_str),
                 id=segment.id,
                 name=segment.id,
                 description=""

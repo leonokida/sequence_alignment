@@ -1,2 +1,5 @@
 Biopython
 pytest
+matplotlib
+pandas
+tabulate

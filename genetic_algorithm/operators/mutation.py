@@ -226,6 +226,9 @@ class MutationOperator:
         if individual.alignment_length == 0:
             return
         
+        # First normalize alignment length to ensure all sequences have the same length
+        individual.normalize_alignment_length()
+        
         # Select position for insertion
         insert_pos = random.randint(0, individual.alignment_length)
         
@@ -248,10 +251,17 @@ class MutationOperator:
         if individual.alignment_length <= 1:
             return
         
+        # First normalize alignment length to ensure all sequences have the same length
+        individual.normalize_alignment_length()
+        
         # Search for gap-only columns
         gap_columns = []
         for pos in range(individual.alignment_length):
-            if all(segment.sequence[pos] == '-' for segment in individual.aligned_segments):
+            # Check if all sequences are long enough and have gap at this position
+            if all(
+                len(segment.sequence) > pos and segment.sequence[pos] == '-' 
+                for segment in individual.aligned_segments
+            ):
                 gap_columns.append(pos)
         
         if gap_columns:
@@ -260,8 +270,9 @@ class MutationOperator:
             
             for segment in individual.aligned_segments:
                 sequence = segment.sequence
-                new_sequence = sequence[:del_pos] + sequence[del_pos + 1:]
-                segment.sequence = new_sequence
+                if len(sequence) > del_pos:
+                    new_sequence = sequence[:del_pos] + sequence[del_pos + 1:]
+                    segment.sequence = new_sequence
             
             # Update alignment length
             individual.alignment_length -= 1
@@ -301,6 +312,9 @@ class MutationOperator:
             return individual.copy_alignment()
         
         mutated_individual = individual.copy_alignment()
+        
+        # Normalize sequence lengths before applying SAGA operator
+        mutated_individual.normalize_alignment_length()
         
         # Build phylogenetic tree and split sequences into two groups
         tree_helper = PhylogeneticTreeHelper()
@@ -462,8 +476,12 @@ class MutationOperator:
         
         Delegates to SAGABlockOperators. See saga_operators.py for details.
         """
+        # Normalize sequence lengths before applying SAGA operator
+        individual_copy = individual.copy_alignment()
+        individual_copy.normalize_alignment_length()
+        
         return self.saga_block_ops.block_shuffling(
-            individual, objective_function, block_type, movement_type, mode
+            individual_copy, objective_function, block_type, movement_type, mode
         )
     
     def saga_block_searching(self, individual: Alignment, min_block_size: int = 3,
@@ -473,8 +491,12 @@ class MutationOperator:
         
         Delegates to SAGABlockSearching. See saga_operators.py for details.
         """
+        # Normalize sequence lengths before applying SAGA operator
+        individual_copy = individual.copy_alignment()
+        individual_copy.normalize_alignment_length()
+        
         return self.saga_block_search.block_searching(
-            individual, min_block_size, max_block_size
+            individual_copy, min_block_size, max_block_size
         )
     
     def saga_local_rearrangement(self, individual: Alignment, objective_function,

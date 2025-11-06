@@ -127,3 +127,25 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Project-specific
+experiments/
+results/
+visualizations/
+*.fasta
+*.aln
+*.csv
+*.json
+!requirements.txt
+!genetic_algorithm/**/*.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db

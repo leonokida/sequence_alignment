@@ -3,9 +3,12 @@ from Bio.Align import MultipleSeqAlignment
 from typing import List
 from Bio.SeqRecord import SeqRecord # Usado para tipagem e inicialização
 from genetic_algorithm.objective_function.pam250 import PAM_250
+from genetic_algorithm.objective_function.base_objective_function import BaseObjectiveFunction
 
-class SAGAObjectiveFunction:
+class SAGAObjectiveFunction(BaseObjectiveFunction):
     def __init__(self, initial_sequences: List[SeqRecord]):
+        super().__init__(initial_sequences)
+        
         self.cost_matrix = PAM_250
         
         # Gap penalties
@@ -14,10 +17,6 @@ class SAGAObjectiveFunction:
         
         # Computes weights
         self.weights = self._calculate_weights(initial_sequences)
-        
-        # Mapping of sequences and IDs
-        self.sequence_map = {seq.id: str(seq.seq) for seq in initial_sequences}
-        self.sequence_ids = [seq.id for seq in initial_sequences]
         
     def _calculate_weights(self, initial_sequences: List[SeqRecord]) -> dict[str, float]:
         """
@@ -109,11 +108,16 @@ class SAGAObjectiveFunction:
         the substitution matrix and affine gap penalties.
         """
         
+        # Handle sequences of different lengths
+        min_length = min(len(seq_i), len(seq_j))
+        if min_length == 0:
+            return 0.0
+        
         score: float = 0
         in_gap_i: bool = False  # Tracks if the previous residue in seq_i was a gap
         in_gap_j: bool = False  # Tracks if the previous residue in seq_j was a gap
         
-        for k in range(len(seq_i)):
+        for k in range(min_length):
             res_i = seq_i[k].upper()
             res_j = seq_j[k].upper()
             

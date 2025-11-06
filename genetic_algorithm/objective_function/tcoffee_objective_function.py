@@ -1,13 +1,13 @@
 from collections import defaultdict
 from typing import List
 from Bio.SeqRecord import SeqRecord
-from Bio.Align import MultipleSeqAlignment
+from Bio.Align import MultipleSeqAlignment, PairwiseAligner
 from Bio.Phylo.TreeConstruction import DistanceCalculator, DistanceTreeConstructor
+from genetic_algorithm.objective_function.base_objective_function import BaseObjectiveFunction
 
-class TCoffeeObjectiveFunction:
+class TCoffeeObjectiveFunction(BaseObjectiveFunction):
     def __init__(self, initial_sequences: List[SeqRecord]):
-        self.sequence_map = {seq.id: str(seq.seq) for seq in initial_sequences}
-        self.sequence_ids = [seq.id for seq in initial_sequences]
+        super().__init__(initial_sequences)
         
         # Computes weights
         self.weights = self._calculate_weights(initial_sequences)
@@ -69,40 +69,64 @@ class TCoffeeObjectiveFunction:
     def build_pairwise_library(self, sequences: List[SeqRecord]):
         """
         Builds the data-driven consistency matrix from all pairwise alignments.
-        Only considers residues aligned at the same positions.
+        Performs pairwise alignments using BioPython PairwiseAligner.
         """
-        # Convert sequences to strings
-        seq_strs = [str(seq.seq).upper() for seq in sequences]
-        num_seq = len(seq_strs)
+        num_seq = len(sequences)
+        aligner = PairwiseAligner()
+        aligner.mode = 'global'
+        aligner.match_score = 2
+        aligner.mismatch_score = -1
+        aligner.open_gap_score = -2
+        aligner.extend_gap_score = -0.5
         
+        # Perform all pairwise alignments
         for i in range(num_seq):
-            seq_i = seq_strs[i]
+            seq_i = sequences[i]
             for j in range(i + 1, num_seq):
-                seq_j = seq_strs[j]
-                if len(seq_i) != len(seq_j):
-                    raise ValueError("All sequences must be pre-aligned (same length)")
+                seq_j = sequences[j]
                 
-                for k in range(len(seq_i)):
-                    res_i, res_j = seq_i[k], seq_j[k]
-                    if res_i != '-' and res_j != '-':
-                        # Add weight 1 for each aligned residue pair
-                        self.pairwise_weights[(res_i, res_j)] += 1.0
-                        self.pairwise_weights[(res_j, res_i)] += 1.0  # symmetric
+                # Align the pair
+                alignments = aligner.align(str(seq_i.seq), str(seq_j.seq))
+                
+                # Take the first (best) alignment
+                if len(alignments) > 0:
+                    alignment = alignments[0]
+                    aligned_i = str(alignment[0])
+                    aligned_j = str(alignment[1])
+                    
+                    # Build pairwise library from aligned positions
+                    for k in range(len(aligned_i)):
+                        res_i = aligned_i[k].upper()
+                        res_j = aligned_j[k].upper()
+                        
+                        if res_i != '-' and res_j != '-':
+                            # Add weight 1 for each aligned residue pair
+                            self.pairwise_weights[(res_i, res_j)] += 1.0
+                            self.pairwise_weights[(res_j, res_i)] += 1.0  # symmetric
     
     def _calculate_pair_consistency_score(self, seq_i: str, seq_j: str) -> float:
         """
         Computes the consistency score for a single pair of sequences.
         """
+        # Handle sequences of different lengths
+        min_length = min(len(seq_i), len(seq_j))
+        if min_length == 0:
+            return 0.0
+        
         score = 0.0
-        for k in range(len(seq_i)):
+        for k in range(min_length):
             res_i, res_j = seq_i[k].upper(), seq_j[k].upper()
             if res_i != '-' and res_j != '-':
                 score += self.pairwise_weights.get((res_i, res_j), 0.0)
         return score
     
-    def compute_fitness(self, aligned_sequences: List[str]) -> float:
+    def compute_fitness(self, aligned_sequences: List[str], **kwargs) -> float:
         """
         Computes the total fitness score (weighted sum-of-pairs) for a candidate MSA.
+        
+        Args:
+            aligned_sequences: List of aligned sequence strings
+            **kwargs: Additional parameters (sequence_ids, alignment_length) - ignored
         """
         total_score = 0.0
         num_seq = len(aligned_sequences)
