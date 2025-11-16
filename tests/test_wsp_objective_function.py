@@ -1,20 +1,22 @@
 import pytest
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
-from genetic_algorithm.objective_function.tcoffee_objective_function import TCoffeeObjectiveFunction
+from genetic_algorithm.objective_function.wsp_objective_function import WSPObjectiveFunction
 
 @pytest.fixture
-def tcoffee_obj():
+def wsp_obj():
+    """Fixture for WSP (Weighted Sum of Pairs) objective function."""
     sequences = [
         SeqRecord(Seq("ACD-"), id="seq1"),
         SeqRecord(Seq("AC-E"), id="seq2"),
         SeqRecord(Seq("A-DG"), id="seq3")
     ]
-    obj = TCoffeeObjectiveFunction(sequences)
+    obj = WSPObjectiveFunction(sequences)
     return obj, sequences
 
-def test_initialization(tcoffee_obj):
-    obj, sequences = tcoffee_obj
+def test_initialization(wsp_obj):
+    """Test WSP objective function initialization."""
+    obj, sequences = wsp_obj
     
     # Test sequence mapping
     assert len(obj.sequence_map) == 3
@@ -26,19 +28,22 @@ def test_initialization(tcoffee_obj):
     # Test pairwise library is non-empty
     assert len(obj.pairwise_weights) > 0
 
-def test_pairwise_library_counts(tcoffee_obj):
-    obj, _ = tcoffee_obj
+def test_pairwise_library_counts(wsp_obj):
+    """Test pairwise library construction."""
+    obj, _ = wsp_obj
     # ('A','A') occurs in positions 0 of all sequences: 3 pairs (seq1-seq2, seq1-seq3, seq2-seq3) (two updates per occurrence)
     assert obj.pairwise_weights[('A','A')] == 6
 
-def test_compute_fitness_nonnegative(tcoffee_obj):
-    obj, _ = tcoffee_obj
+def test_compute_fitness_nonnegative(wsp_obj):
+    """Test that WSP fitness scores are non-negative."""
+    obj, _ = wsp_obj
     aligned_sequences = ["ACD-", "AC-E", "A-DG"]
     fitness = obj.compute_fitness(aligned_sequences)
     assert fitness >= 0
 
-def test_consistency_scores_increase_with_alignment(tcoffee_obj):
-    obj, _ = tcoffee_obj
+def test_consistency_scores_increase_with_alignment(wsp_obj):
+    """Test that better alignments receive higher WSP scores."""
+    obj, _ = wsp_obj
     aligned_sequences = ["ACD-", "AC-E", "A-DG"]
     better_aligned = ["ACD-", "ACD-", "ACDG"]
     

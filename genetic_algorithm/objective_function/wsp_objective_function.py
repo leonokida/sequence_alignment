@@ -5,7 +5,18 @@ from Bio.Align import MultipleSeqAlignment, PairwiseAligner
 from Bio.Phylo.TreeConstruction import DistanceCalculator, DistanceTreeConstructor
 from genetic_algorithm.objective_function.base_objective_function import BaseObjectiveFunction
 
-class TCoffeeObjectiveFunction(BaseObjectiveFunction):
+class WSPObjectiveFunction(BaseObjectiveFunction):
+    """Weighted Sum of Pairs (WSP) Objective Function.
+    
+    Implements a weighted sum-of-pairs scoring scheme that combines:
+    1. Sequence weights based on phylogenetic relationships (Clustal W-like)
+    2. Pairwise residue library from global alignments
+    3. Consistency-based scoring
+    
+    This is a data-driven approach that builds a library of aligned residue pairs
+    from pairwise alignments and uses it to score candidate multiple alignments.
+    """
+    
     def __init__(self, initial_sequences: List[SeqRecord]):
         super().__init__(initial_sequences)
         
@@ -19,6 +30,9 @@ class TCoffeeObjectiveFunction(BaseObjectiveFunction):
     def _calculate_weights(self, initial_sequences: List[SeqRecord]) -> dict[str, float]:
         """
         Calculates sequence weights (Clustal W-like) using Neighbor-Joining on pairwise sequence identity.
+        
+        Sequences that are more distant from others receive higher weights to prevent
+        closely related sequences from dominating the alignment score.
         """
         
         # Pad sequences to same length for MSA
@@ -68,8 +82,11 @@ class TCoffeeObjectiveFunction(BaseObjectiveFunction):
     
     def build_pairwise_library(self, sequences: List[SeqRecord]):
         """
-        Builds the data-driven consistency matrix from all pairwise alignments.
-        Performs pairwise alignments using BioPython PairwiseAligner.
+        Builds the pairwise residue library from all pairwise global alignments.
+        
+        For each pair of sequences, performs a global alignment and records which
+        residues align together. This library is then used to score candidate MSAs
+        based on how consistent they are with these pairwise alignments.
         """
         num_seq = len(sequences)
         aligner = PairwiseAligner()
@@ -122,11 +139,19 @@ class TCoffeeObjectiveFunction(BaseObjectiveFunction):
     
     def compute_fitness(self, aligned_sequences: List[str], **kwargs) -> float:
         """
-        Computes the total fitness score (weighted sum-of-pairs) for a candidate MSA.
+        Computes the Weighted Sum-of-Pairs (WSP) fitness score for a candidate MSA.
+        
+        The score is calculated as:
+        WSP = Σ(i<j) weight_i * weight_j * consistency_score(seq_i, seq_j)
+        
+        Where consistency_score is based on the pairwise residue library.
         
         Args:
             aligned_sequences: List of aligned sequence strings
             **kwargs: Additional parameters (sequence_ids, alignment_length) - ignored
+        
+        Returns:
+            Float score where higher values indicate better alignments
         """
         total_score = 0.0
         num_seq = len(aligned_sequences)

@@ -141,6 +141,7 @@ visualizations/
 
 # IDE
 .vscode/
+.github/
 .idea/
 *.swp
 *.swo
@@ -149,3 +150,5 @@ visualizations/
 # OS
 .DS_Store
 Thumbs.db
+
+artigo/

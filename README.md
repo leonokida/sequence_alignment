@@ -34,7 +34,7 @@ Todos os experimentos utilizam os seguintes parâmetros padrão (quando não var
 
 ## 📊 Categorias de Experimentos
 
-### 1. Funções Objetivo (SAGA vs T-Coffee)
+### 1. Funções Objetivo (SAGA vs WSP)
 
 Compara duas abordagens filosóficas diferentes para avaliar a qualidade de alinhamentos.
 
@@ -44,13 +44,14 @@ Compara duas abordagens filosóficas diferentes para avaliar a qualidade de alin
 - **Cálculo**: Soma de scores de pares de aminoácidos + penalidades de gaps
 - **Penalidades**: Gap opening (-11) + gap extension (-1)
 
-#### T-Coffee (Notredame et al., 2000)
-- **Base**: Biblioteca de alinhamentos par-a-par
-- **Abordagem**: Consistência entre múltiplos alinhamentos
-- **Cálculo**: Média dos scores de consistência par-a-par
-- **Método**: Constrói biblioteca com alinhamentos locais (Biopython)
+#### WSP - Weighted Sum of Pairs
+- **Base**: Biblioteca de alinhamentos par-a-par com pesos filogenticametne informados
+- **Abordagem**: Consistência entre múltiplos alinhamentos ponderada por distâncias filogenetícas
+- **Cálculo**: Soma ponderada dos scores de consistência par-a-par
+- **Método**: Constrói biblioteca de resíduos alinhados via alinhamentos globais (Biopython)
+- **Pesos**: Calculados via árvore Neighbor-Joining baseada em identidade de sequências
 
-**Configurações testadas**: `obj_saga`, `obj_tcoffee`
+**Configurações testadas**: `obj_saga`, `obj_wsp`
 
 ---
 
@@ -189,7 +190,7 @@ import pandas as pd
 # Carregar resultados
 df = pd.read_csv("experiments/<ID>/consolidated_results.csv")
 
-# Comparar funções objetivo
+# Comparar funções objetivo (SAGA vs WSP)
 obj_comp = df[df['experiment_name'].str.startswith('obj_')]
 print(obj_comp.groupby('experiment_name')['improvement_percent'].mean())
 
@@ -233,17 +234,6 @@ python run_all_experiments.py \
     --num-runs 3 \
     --output-dir experiments
 ```
-
----
-
-## 📚 Referências
-
-1. **Notredame, C., & Higgins, D. G. (1996).** SAGA: Sequence Alignment by Genetic Algorithm. *Nucleic Acids Research*, 24(8), 1515-1524.
-
-2. **Notredame, C., Higgins, D. G., & Heringa, J. (2000).** T-Coffee: A novel method for fast and accurate multiple sequence alignment. *Journal of Molecular Biology*, 302(1), 205-217.
-
-3. **Dayhoff, M. O., Schwartz, R. M., & Orcutt, B. C. (1978).** A model of evolutionary change in proteins. *Atlas of Protein Sequence and Structure*, 5(3), 345-352.
-
 ---
 
 ## 📁 Estrutura do Código
@@ -255,7 +245,7 @@ sequence_alignment/
 │   ├── alignment.py                  # Classe Alignment
 │   ├── objective_function/
 │   │   ├── saga_objective_function.py
-│   │   ├── tcoffee_objective_function.py
+│   │   ├── wsp_objective_function.py
 │   │   └── pam250.py
 │   ├── operators/
 │   │   ├── selection.py

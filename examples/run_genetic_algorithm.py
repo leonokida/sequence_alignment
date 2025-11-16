@@ -3,14 +3,14 @@ Example usage of the Genetic Algorithm orchestrator for Multiple Sequence Alignm
 
 This script demonstrates how to:
 1. Load sequences from a file
-2. Choose an objective function (SAGA or T-Coffee)
+2. Choose an objective function (SAGA or WSP)
 3. Configure and run the genetic algorithm
 4. Save and analyze results
 """
 
 from genetic_algorithm.utils.read_sequences_file import read_fasta_file
 from genetic_algorithm.objective_function.saga_objective_function import SAGAObjectiveFunction
-from genetic_algorithm.objective_function.tcoffee_objective_function import TCoffeeObjectiveFunction
+from genetic_algorithm.objective_function.wsp_objective_function import WSPObjectiveFunction
 from genetic_algorithm.genetic_algorithm import GeneticAlgorithm
 
 
@@ -73,12 +73,12 @@ def run_saga_example():
     return results
 
 
-def run_tcoffee_example():
+def run_wsp_example():
     """
-    Example using T-Coffee objective function (consistency-based).
+    Example using WSP (Weighted Sum of Pairs) objective function.
     """
     print("=" * 80)
-    print("EXAMPLE: Genetic Algorithm with T-Coffee Objective Function")
+    print("EXAMPLE: Genetic Algorithm with WSP Objective Function")
     print("=" * 80)
     
     # 1. Load sequences
@@ -89,8 +89,8 @@ def run_tcoffee_example():
         print(f"  - {seq.id}: {len(seq.seq)} residues")
     
     # 2. Initialize objective function
-    objective_function = TCoffeeObjectiveFunction(sequences)
-    print("\nObjective Function: T-Coffee (Consistency-based)")
+    objective_function = WSPObjectiveFunction(sequences)
+    print("\nObjective Function: WSP (Weighted Sum of Pairs)")
     print(f"  Pairwise library size: {len(objective_function.pairwise_weights)}")
     
     # 3. Configure genetic algorithm
@@ -133,10 +133,10 @@ def run_tcoffee_example():
 
 def compare_objective_functions():
     """
-    Compare SAGA and T-Coffee objective functions on the same sequences.
+    Compare SAGA and WSP (Weighted Sum of Pairs) objective functions on the same sequences.
     """
     print("=" * 80)
-    print("COMPARISON: SAGA vs T-Coffee Objective Functions")
+    print("COMPARISON: SAGA vs WSP Objective Functions")
     print("=" * 80)
     
     sequences_file = "sequences/seqdump_1.txt"
@@ -155,25 +155,25 @@ def compare_objective_functions():
     saga_ga.run(save_results=True, output_dir="results")
     saga_best_fitness = saga_ga.get_best_alignment().fitness_score
     
-    # Run with T-Coffee
-    print("\n### Running with T-Coffee Objective Function ###\n")
-    tcoffee_objective = TCoffeeObjectiveFunction(sequences)
-    tcoffee_ga = GeneticAlgorithm(
+    # Run with WSP
+    print("\n### Running with WSP Objective Function ###\n")
+    wsp_objective = WSPObjectiveFunction(sequences)
+    wsp_ga = GeneticAlgorithm(
         initial_sequences=sequences,
-        objective_function=tcoffee_objective,
+        objective_function=wsp_objective,
         population_size=30,
         num_generations=50,
         verbose=False
     )
-    tcoffee_ga.run(save_results=True, output_dir="results")
-    tcoffee_best_fitness = tcoffee_ga.get_best_alignment().fitness_score
+    wsp_ga.run(save_results=True, output_dir="results")
+    wsp_best_fitness = wsp_ga.get_best_alignment().fitness_score
     
     # Print comparison
     print("\n" + "=" * 80)
     print("COMPARISON RESULTS")
     print("=" * 80)
     print(f"SAGA Best Fitness: {saga_best_fitness:.4f}")
-    print(f"T-Coffee Best Fitness: {tcoffee_best_fitness:.4f}")
+    print(f"WSP Best Fitness: {wsp_best_fitness:.4f}")
     print("\nNote: Fitness scores are not directly comparable between different")
     print("objective functions as they use different scoring systems.")
 
@@ -219,14 +219,14 @@ if __name__ == "__main__":
     # Choose which example to run
     print("Select an example to run:")
     print("1. SAGA Objective Function")
-    print("2. T-Coffee Objective Function")
+    print("2. WSP (Weighted Sum of Pairs) Objective Function")
     print("3. Compare Both Objective Functions")
     print("4. Custom Configuration")
     
     choice = input("\nEnter choice (1-4) or press Enter for default (1): ").strip()
     
     if choice == "2":
-        run_tcoffee_example()
+        run_wsp_example()
     elif choice == "3":
         compare_objective_functions()
     elif choice == "4":

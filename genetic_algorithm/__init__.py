@@ -9,7 +9,7 @@ from genetic_algorithm.alignment import Alignment, AlignedSegment
 from genetic_algorithm.genetic_algorithm import GeneticAlgorithm, GeneticAlgorithmResults
 from genetic_algorithm.objective_function.base_objective_function import BaseObjectiveFunction
 from genetic_algorithm.objective_function.saga_objective_function import SAGAObjectiveFunction
-from genetic_algorithm.objective_function.tcoffee_objective_function import TCoffeeObjectiveFunction
+from genetic_algorithm.objective_function.wsp_objective_function import WSPObjectiveFunction
 from genetic_algorithm.operators.selection import SelectionOperator
 from genetic_algorithm.operators.crossover import CrossoverOperator
 from genetic_algorithm.operators.mutation import MutationOperator
@@ -21,7 +21,7 @@ __all__ = [
     'GeneticAlgorithmResults',
     'BaseObjectiveFunction',
     'SAGAObjectiveFunction',
-    'TCoffeeObjectiveFunction',
+    'WSPObjectiveFunction',
     'SelectionOperator',
     'CrossoverOperator',
     'MutationOperator',

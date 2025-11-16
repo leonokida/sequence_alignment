@@ -2,7 +2,7 @@
 Comprehensive Experiment Runner for Multiple Sequence Alignment using Genetic Algorithm.
 
 This script runs multiple experiments with different configurations and consolidates results:
-- Different objective functions (SAGA, T-Coffee)
+- Different objective functions (SAGA, WSP)
 - Different mutation operators (standard, SAGA operators)
 - Different selection methods
 - Different crossover methods
@@ -22,7 +22,7 @@ import time
 from genetic_algorithm import (
     GeneticAlgorithm, 
     SAGAObjectiveFunction, 
-    TCoffeeObjectiveFunction
+    WSPObjectiveFunction
 )
 from genetic_algorithm.utils.read_sequences_file import read_fasta_file
 
@@ -149,10 +149,10 @@ class ExperimentRunner:
     
     def run_objective_function_comparison(self, num_runs: int = 3):
         """
-        Compare SAGA vs T-Coffee objective functions.
+        Compare SAGA vs WSP (Weighted Sum of Pairs) objective functions.
         """
         print("\n" + "="*80)
-        print("COMPARISON 1: Objective Functions (SAGA vs T-Coffee)")
+        print("COMPARISON 1: Objective Functions (SAGA vs WSP)")
         print("="*80)
         
         base_config = {
@@ -177,15 +177,15 @@ class ExperimentRunner:
         )
         self.all_results.extend(saga_results)
         
-        # T-Coffee objective function
-        tcoffee_config = base_config.copy()
-        tcoffee_config['objective_function'] = TCoffeeObjectiveFunction(self.sequences)
-        tcoffee_results = self.run_single_experiment(
-            tcoffee_config, 
-            "obj_tcoffee", 
+        # WSP (Weighted Sum of Pairs) objective function
+        wsp_config = base_config.copy()
+        wsp_config['objective_function'] = WSPObjectiveFunction(self.sequences)
+        wsp_results = self.run_single_experiment(
+            wsp_config, 
+            "obj_wsp", 
             num_runs
         )
-        self.all_results.extend(tcoffee_results)
+        self.all_results.extend(wsp_results)
     
     def run_mutation_operator_comparison(self, num_runs: int = 3):
         """
